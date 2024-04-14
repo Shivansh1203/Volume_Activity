@@ -1,236 +1,302 @@
+# import streamlit as st
+# import pandas as pd
+# import os
+
+# # Function to load CSV files from the directory
+# def load_csv_files(directory):
+#     csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+#     return csv_files
+
+# # Function to load the selected CSV file
+# @st.cache_data
+# def load_data(selected_csv):
+#     df = pd.read_csv(selected_csv)
+#     st.write(df)
+#     return df
+
+# # Streamlit UI
+# st.title("Custom Date and Time Selection")
+
+# # Fetch all CSV files from the current directory
+# csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+
+# # Dropdown menu to select a CSV file
+# selected_csv = st.selectbox("Choose a CSV file", csv_files)
+
+# if selected_csv:
+#     df = load_data(selected_csv)
+
+#     # Splitting the Timestamp column into Date and Time columns
+#     df['Date'] = pd.to_datetime(df['Timestamp']).dt.date
+#     df['Time'] = pd.to_datetime(df['Timestamp']).dt.time
+
+#     # Create a new DataFrame with Date, Time, and other previous columns
+#     new_df = df[['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Type', 'Range']]
+
+#     st.write("New DataFrame with Date, Time, and other previous columns:")
+#     st.write(new_df)
+
+#     # Date and time selection
+#     selected_date = st.date_input("Select Date", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
+#     selected_time = st.time_input("Select Time", value=new_df['Time'].iloc[0])
+
+#     # Convert custom date and time to match the format of the 'Timestamp' column in the new DataFrame
+#     custom_date = pd.to_datetime(f"{selected_date.strftime('%Y-%d-%m')}")
+
+#     st.write("Selected Date and Time:", custom_date)
+
+#     # print(selected_date)
+#     # print(custom_date)
+#     # print(selected_time)
+
+#     # Filter data based on selected date and time
+#     filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
+
+#     st.write("Filtered Data:")
+#     st.write(filtered_data)
+
+#     if not filtered_data.empty:
+#         # Display volume and type
+#         st.subheader("Selected Data:")
+#         st.write(filtered_data[['Volume', 'Type']])
+#     else:
+#         st.write("No data available for the selected date and time.")
+
+# import streamlit as st
+# import pandas as pd
+# import os
+# import matplotlib.pyplot as plt
+
+# # Function to load CSV files from the directory
+# def load_csv_files(directory):
+#     csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+#     return csv_files
+
+# # Function to load the selected CSV file
+# @st.cache_data
+# def load_data(selected_csv):
+#     df = pd.read_csv(selected_csv)
+#     st.write(df)
+#     return df
+
+# # Function to calculate percentage of buy and sell volumes
+# def calculate_percentage(new_df, selected_time, custom_date):
+#     filtered_df = new_df[(new_df['Time'] == selected_time) & (new_df['Date'] <= custom_date)]
+#     total_volume = filtered_df['Volume'].sum()
+#     buy_volume = filtered_df[filtered_df['Type'] == 'Buy']['Volume'].sum()
+#     sell_volume = filtered_df[filtered_df['Type'] == 'Sell']['Volume'].sum()
+#     total_count = len(filtered_df)
+#     buy_count = len(filtered_df[filtered_df['Type'] == 'Buy'])
+#     sell_count = len(filtered_df[filtered_df['Type'] == 'Sell'])
+#     buy_percentage = (buy_count / total_count) * 100 if total_volume > 0 else 0
+#     sell_percentage = (sell_count / total_count) * 100 if total_volume > 0 else 0
+#     return buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume
+
+# # Streamlit UI
+# st.title("Volume Percentage Pie Chart")
+
+# # Fetch all CSV files from the current directory
+# csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+
+# # Dropdown menu to select a CSV file
+# selected_csv = st.selectbox("Choose a CSV file", csv_files)
+
+# if selected_csv:
+#     df = load_data(selected_csv)
+
+#     # Separate date and time from Timestamp column
+#     df['Date'] = pd.to_datetime(df['Timestamp']).dt.date
+#     df['Time'] = pd.to_datetime(df['Timestamp']).dt.time
+
+#     # Create a new DataFrame with Date, Time, and other previous columns
+#     new_df = df[['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Type', 'Range']]
+
+#     # Date and time selection
+#     selected_date = st.date_input("Select Date", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
+#     selected_time = st.time_input("Select Time", value=new_df['Time'].iloc[0])
+
+#     custom_date = pd.to_datetime(f"{selected_date.strftime('%Y-%d-%m')}")
+
+#     # Filter data based on selected date and time
+#     filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
+
+#     st.write("Filtered Data:")
+#     st.write(filtered_data)
+
+#     if not filtered_data.empty:
+#         # Display volume and type
+#         st.subheader("Selected Data:")
+#         st.write(filtered_data[['Volume', 'Type']])
+
+#         # Calculate percentage of buy and sell volumes
+#         buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume = calculate_percentage(new_df, selected_time, custom_date)
+
+#         # Create a pie chart
+#         labels = ['Buy', 'Sell']
+#         sizes = [buy_percentage, sell_percentage]
+#         volumes = [buy_volume, sell_volume]
+#         explode = (0.1, 0)
+#         fig1, ax1 = plt.subplots()
+#         wedges, texts, autotexts = ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"))
+
+#         # Create custom tooltip format
+#         tooltip_text = [
+#             f"Type: {labels[i]}, Volume: {volumes[i]} ({sizes[i]:.2f}%)"
+#             for i in range(len(labels))
+#         ]
+#         tooltip_text.append(f"Total Volume: {total_volume}")
+
+#         # Update tooltips
+#         tooltip = st.pyplot(fig1)
+#         tooltip.write("\n".join(tooltip_text))
+#     else:
+#         st.write("No data available for the selected date and time.")
+
+# import streamlit as st
+# import pandas as pd
+# import os
+# import matplotlib.pyplot as plt
+
+# # Function to load CSV files from the directory
+# def load_csv_files(directory):
+#     csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+#     return csv_files
+
+# # Function to load the selected CSV file
+# @st.cache_data
+# def load_data(selected_csv):
+#     df = pd.read_csv(selected_csv)
+#     st.write(df)
+#     return df
+
+# # Function to calculate percentage of buy and sell volumes
+# def calculate_percentage(new_df, selected_time, custom_date):
+#     filtered_df = new_df[(new_df['Time'] == selected_time) & (new_df['Date'] <= custom_date)]
+#     total_volume = filtered_df['Volume'].sum()
+#     buy_volume = filtered_df[filtered_df['Type'] == 'Buy']['Volume'].sum()
+#     sell_volume = filtered_df[filtered_df['Type'] == 'Sell']['Volume'].sum()
+#     total_count = len(filtered_df)
+#     buy_count = len(filtered_df[filtered_df['Type'] == 'Buy'])
+#     sell_count = len(filtered_df[filtered_df['Type'] == 'Sell'])
+#     buy_percentage = (buy_count / total_count) * 100 if total_volume > 0 else 0
+#     sell_percentage = (sell_count / total_count) * 100 if total_volume > 0 else 0
+#     return buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume
+
+# # Streamlit UI
+# st.title("Volume Percentage Pie Chart")
+
+# # Fetch all CSV files from the current directory
+# csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+
+# # Dropdown menu to select a CSV file
+# selected_csv = st.selectbox("Choose a CSV file", csv_files)
+
+# if selected_csv:
+#     df = load_data(selected_csv)
+
+#     # Separate date and time from Timestamp column
+#     df['Date'] = pd.to_datetime(df['Timestamp']).dt.date
+#     df['Time'] = pd.to_datetime(df['Timestamp']).dt.time
+
+#     # Create a new DataFrame with Date, Time, and other previous columns
+#     new_df = df[['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Type', 'Range']]
+
+#     # Date and time selection
+#     selected_date = st.date_input("Select Date", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
+#     selected_time = st.time_input("Select Time", value=new_df['Time'].iloc[0])
+
+#     custom_date = pd.to_datetime(f"{selected_date.strftime('%Y-%d-%m')}")
+
+#     # Filter data based on selected date and time
+#     filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
+
+#     st.write("Filtered Data:")
+#     st.write(filtered_data)
+
+#     if not filtered_data.empty:
+#         # Calculate percentage of buy and sell volumes
+#         buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume = calculate_percentage(new_df, selected_time, custom_date)
+
+#         if total_volume > 0:  # Ensure that total_volume is non-zero
+#             # Create a pie chart
+#             labels = ['Buy', 'Sell']
+#             sizes = [buy_percentage, sell_percentage]
+#             volumes = [buy_volume, sell_volume]
+#             colors = ['green', 'red']  # Green for buy, red for sell
+#             explode = (0.1, 0)
+
+#             # Plot pie chart using Streamlit's native function
+#             fig1, ax1 = plt.subplots()
+#             ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"), colors=colors)
+#             ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+#             # Show pie chart in Streamlit
+#             st.pyplot(fig1)
+
+#             # Create custom tooltip format
+#             tooltip_text = [
+#                 f"Type: {labels[i]}, Volume: {volumes[i]} ({sizes[i]:.2f}%)"
+#                 for i in range(len(labels))
+#             ]
+#             tooltip_text.append(f"Total Volume: {total_volume}")
+
+#             # Display tooltip
+#             st.write("\n".join(tooltip_text))
+#         else:
+#             st.write("Total volume is zero. Cannot create pie chart.")
+#     else:
+#         st.write("No data available for the selected date and time.")
+
+
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import os
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
-def plot_line_chart_with_slider(df, y_column, start_date, end_date, title):
-    # Convert start_date and end_date to datetime objects
-    start_datetime = pd.Timestamp(start_date)
-    end_datetime = pd.Timestamp(end_date)
-    
-    # Filter dataframe based on selected date range
-    mask = (df['Timestamp'] >= start_datetime) & (df['Timestamp'] <= end_datetime)
-    filtered_df = df.loc[mask]
+# Function to load CSV files from the directory
+def load_csv_files(directory):
+    csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+    return csv_files
 
-    # Sort dataframe by 'Timestamp'
-    filtered_df = filtered_df.sort_values(by='Timestamp')
+# Function to load the selected CSV file
+@st.cache_data
+def load_data(selected_csv):
+    df = pd.read_csv(selected_csv)
+    st.write(df)
+    return df
 
-    # Create a Plotly figure
-    fig = go.Figure()
+# Function to calculate percentage of buy and sell volumes
+def calculate_percentage(new_df, selected_time, custom_date):
+    filtered_df = new_df[(new_df['Time'] == selected_time) & (new_df['Date'] <= custom_date)]
+    total_volume = filtered_df['Volume'].sum()
+    buy_volume = filtered_df[filtered_df['Type'] == 'Buy']['Volume'].sum()
+    sell_volume = filtered_df[filtered_df['Type'] == 'Sell']['Volume'].sum()
+    total_count = len(filtered_df)
+    buy_count = len(filtered_df[filtered_df['Type'] == 'Buy'])
+    sell_count = len(filtered_df[filtered_df['Type'] == 'Sell'])
+    buy_percentage = (buy_count / total_count) * 100 if total_volume > 0 else 0
+    sell_percentage = (sell_count / total_count) * 100 if total_volume > 0 else 0
+    return buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume
 
-    # Add trace for the selected column
-    fig.add_trace(go.Scatter(x=filtered_df['Timestamp'], y=filtered_df[y_column], name=y_column, mode='lines'))
+# Function to create candlestick chart
+def create_candlestick_chart(filtered_df):
+    # Filter the data where the date is less than or equal to the selected date
+    filtered_df = new_df[(new_df['Date'] <= custom_date)]
 
-    # Update layout with title and slider
-    fig.update_layout(
-        title=title,
-        xaxis=dict(title='Timestamp', rangeslider=dict(visible=True), type='date'),
-        yaxis=dict(title=y_column, autorange=True),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly figure
+    fig = go.Figure(data=[go.Candlestick(x=filtered_df.index,
+                                         open=filtered_df['Open'],
+                                         high=filtered_df['High'],
+                                         low=filtered_df['Low'],
+                                         close=filtered_df['Close'])])
+    fig.update_layout(title='Candlestick Chart',
+                      xaxis_title='Index Number According to the Table (Newest Date First)',
+                      yaxis_title='Price',
+                      xaxis_rangeslider_visible=False)
     st.plotly_chart(fig)
 
-def plot_scatter_chart(df, x_column, y_column, start_date, end_date, title):
-    # Convert start_date and end_date to datetime objects
-    start_datetime = pd.Timestamp(start_date)
-    end_datetime = pd.Timestamp(end_date)
-    
-    # Filter dataframe based on selected date range
-    mask = (df['Timestamp'] >= start_datetime) & (df['Timestamp'] <= end_datetime)
-    filtered_df = df.loc[mask]
-
-    # Create a Plotly figure
-    fig = go.Figure()
-
-    # Add trace for scatter plot
-    fig.add_trace(go.Scatter(x=filtered_df[x_column], y=filtered_df[y_column], mode='markers', name='Data points'))
-
-    # Update layout with title and axis labels
-    fig.update_layout(
-        title=title,
-        xaxis=dict(title=x_column),
-        yaxis=dict(title=y_column),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly figure
-    st.plotly_chart(fig)
-
-def plot_heatmap(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the mean of 'Market Open Interest'
-    heatmap_data = df.groupby(['Year', 'Month'])['Market Open Interest'].mean().reset_index()
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot = heatmap_data.pivot(index='Month', columns='Year', values='Market Open Interest')
-
-    # Create a Plotly heatmap
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot.values,
-        x=heatmap_data_pivot.columns,
-        y=heatmap_data_pivot.index,
-        colorscale='ylgn'))
-
-    # Update layout with title and axis labels
-    fig.update_layout(
-        title='Market Open Interest Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig)
-
-
-# Daily Range Heatmap
-def plot_heatmap1(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the mean of 'Daily Range'
-    heatmap_data1 = df.groupby(['Year', 'Month'])['Daily Range'].mean().reset_index()
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot1 = heatmap_data1.pivot(index='Month', columns='Year', values='Daily Range')
-
-    # Create a Plotly heatmap
-    fig1 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot1.values,
-        x=heatmap_data_pivot1.columns,
-        y=heatmap_data_pivot1.index,
-        colorscale='Viridis'))
-
-    # Update layout with title and axis labels
-    fig1.update_layout(
-        title='Daily Range Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig1)
-
-
-#Greater MOI
-
-def plot_heatmap2(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-   
-     # Group by year and month and calculate the count of occurrences of 'Greater MOI' equal to 1
-    heatmap_data2 = df[df['Greater MOI'] == 1].groupby(['Year', 'Month']).size().reset_index(name='Count')
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot2 = heatmap_data2.pivot(index='Month', columns='Year', values='Count')
-
-    # Create a Plotly heatmap
-    fig2 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot2.values,
-        x=heatmap_data_pivot2.columns,
-        y=heatmap_data_pivot2.index,
-        colorscale="Viridis"))
-
-    # Update layout with title and axis labels
-    fig2.update_layout(
-        title='Greater MOI Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig2)
-
-#Greater DR
-    
-def plot_heatmap3(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the count of occurrences of 'Greater DR' equal to 1
-    heatmap_data3 = df[df['Greater DR'] == 1].groupby(['Year', 'Month']).size().reset_index(name='Count')
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot3 = heatmap_data3.pivot(index='Month', columns='Year', values='Count')
-
-    # Create a Plotly heatmap
-    fig3 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot3.values,
-        x=heatmap_data_pivot3.columns,
-        y=heatmap_data_pivot3.index,
-        colorscale="Viridis"))
-
-    # Update layout with title and axis labels
-    fig3.update_layout(
-        title='Greater DR Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig3)
 # Streamlit UI
-st.title('Market Open Interest and Daily Range Analysis')
+st.title("Volume Percentage Pie Chart and Candlestick Chart")
 
 # Fetch all CSV files from the current directory
 csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
@@ -239,68 +305,60 @@ csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
 selected_csv = st.selectbox("Choose a CSV file", csv_files)
 
 if selected_csv:
-    # Read the selected CSV file
-    df = pd.read_csv(selected_csv)
-    
-    # Display the dataframe (optional)
-    st.write("Selected CSV data:")
-    st.write(df)
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Date range selection for Market Open Interest and Daily Range
-    min_date = df['Timestamp'].min().date()
-    max_date = df['Timestamp'].max().date()
-    start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
-    end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
-    
-    # Plot Market Open Interest chart
-    st.subheader("Market Open Interest")
-    plot_line_chart_with_slider(df, 'Market Open Interest', start_date, end_date, "Market Open Interest")
+    df = load_data(selected_csv)
 
-    # Plot Daily Range chart
-    st.subheader("Daily Range")
-    plot_line_chart_with_slider(df, 'Daily Range', start_date, end_date, "Daily Range")
+    # Separate date and time from Timestamp column
+    df['Date'] = pd.to_datetime(df['Timestamp']).dt.date
+    df['Time'] = pd.to_datetime(df['Timestamp']).dt.time
 
-    # Plot scatter chart for Market Open Interest and Daily Range
-    st.subheader("Market Open Interest vs. Daily Range")
-    plot_scatter_chart(df, 'Market Open Interest', 'Daily Range', start_date, end_date, "Market Open Interest vs. Daily Range")
+    # Create a new DataFrame with Date, Time, and other previous columns
+    new_df = df[['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Type', 'Range']]
 
-    # Date range selection for "Greater MOI"
-    st.subheader("Count of Greater MOI equal to 1")
-    moi_start_date = st.date_input('Start date for Greater MOI', min_value=min_date, max_value=max_date, value=min_date)
-    moi_end_date = st.date_input('End date for Greater MOI', min_value=min_date, max_value=max_date, value=max_date)
-    
-    # Filter dataframe based on selected date range for Greater MOI
-    mask = (df['Timestamp'] >= pd.Timestamp(moi_start_date)) & (df['Timestamp'] <= pd.Timestamp(moi_end_date))
-    filtered_moi_df = df.loc[mask]
-    
-    # Check if 'Greater MOI' column exists
-    if 'Greater MOI' in filtered_moi_df.columns:
-        # Count occurrences of Greater MOI equal to 1
-        moi_count = filtered_moi_df[filtered_moi_df['Greater MOI'] == 1].shape[0]
-        st.write(f"Number of times 'Greater MOI' is equal to 1: {moi_count}")
+    # Date and time selection
+    selected_date = st.date_input("Select Date", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
+    selected_time = st.time_input("Select Time", value=new_df['Time'].iloc[0])
+
+    custom_date = pd.to_datetime(f"{selected_date.strftime('%Y-%d-%m')}")
+
+    # Filter data based on selected date and time
+    filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
+
+    st.write("Filtered Data:")
+    st.write(filtered_data)
+
+    if not filtered_data.empty:
+        # Calculate percentage of buy and sell volumes
+        buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume = calculate_percentage(new_df, selected_time, custom_date)
+
+        if total_volume > 0:  # Ensure that total_volume is non-zero
+            # Create a pie chart
+            labels = ['Buy', 'Sell']
+            sizes = [buy_percentage, sell_percentage]
+            volumes = [buy_volume, sell_volume]
+            colors = ['green', 'red']  # Green for buy, red for sell
+            explode = (0.1, 0)
+
+            # Plot pie chart using Streamlit's native function
+            fig1, ax1 = plt.subplots()
+            ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"), colors=colors)
+            ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+            # Show pie chart in Streamlit
+            st.pyplot(fig1)
+
+            # Create custom tooltip format
+            tooltip_text = [
+                f"Type: {labels[i]}, Volume: {volumes[i]} ({sizes[i]:.2f}%)"
+                for i in range(len(labels))
+            ]
+            tooltip_text.append(f"Total Volume: {total_volume}")
+
+            # Display tooltip
+            st.write("\n".join(tooltip_text))
+
+            # Create candlestick chart
+            create_candlestick_chart(new_df)
+        else:
+            st.write("Total volume is zero. Cannot create pie chart.")
     else:
-        st.write("The 'Greater MOI' column does not exist in the selected data.")
-
-
-
-    st.subheader("Count of Greater DR equal to 1")
-    
-    # Filter dataframe based on selected date range for Greater MOI
-    mask = (df['Timestamp'] >= pd.Timestamp(moi_start_date)) & (df['Timestamp'] <= pd.Timestamp(moi_end_date))
-    filtered_dr_df = df.loc[mask]
-    
-    # Check if 'Greater MOI' column exists
-    if 'Greater DR' in filtered_dr_df.columns:
-        # Count occurrences of Greater MOI equal to 1
-        dr_count = filtered_dr_df[filtered_moi_df['Greater DR'] == 1].shape[0]
-        st.write(f"Number of times 'Greater DR' is equal to 1: {dr_count}")
-    else:
-        st.write("The 'Greater DR' column does not exist in the selected data.")
-
-    plot_heatmap(df)
-    plot_heatmap1(df)
-    plot_heatmap2(df)
-    plot_heatmap3(df)
+        st.write("No data available for the selected date and time.")
