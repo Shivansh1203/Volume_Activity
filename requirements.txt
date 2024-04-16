@@ -1,7 +1,6 @@
 streamlit_lottie==0.0.3
 streamlit
 requests==2.24.0
-Pillow==9.1.0
 pandas==1.5.3
 matplotlib==3.7.0
 plotly==5.13.0
