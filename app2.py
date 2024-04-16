@@ -371,11 +371,13 @@ if selected_csv:
             explode = (0.1, 0)
 
             # Plot pie chart using Streamlit's native function
-            fig1, ax1 = plt.subplots()
+            fig1, ax1 = plt.subplots(figsize=(3, 3))
+
+            # fig1, ax1 = plt.subplots()
             ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"), colors=colors)
             ax1.axis('equal')  
-
-            st.subheader("Buy/Sell Type Volumne Share Pie Chart")
+            
+            st.subheader("Buy/Sell Type Volume Share Pie Chart")
             st.pyplot(fig1)
 
             st.subheader("The Required Buy/Sell Volume Percentage upto the selected date for a particular timespan")
