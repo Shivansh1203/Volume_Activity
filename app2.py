@@ -329,7 +329,7 @@ def create_candlestick_chart(filtered_df):
 
 
 st.title("Dataset Viewer")
-st.subheader("Note: To check the Latest Date upto which the data is updated select the required CSV file and see the 0th Index if the below dataset viewer -> Upto that date you can check the Volume Activity.")
+st.subheader("Note: To check the Latest Date upto which the data is updated select the required CSV file and see the 0th Index of the below dataset viewer -> Upto that date you can check the Volume Activity.")
 st.write("Last Updated-> 16/04/2024")
 csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
 
