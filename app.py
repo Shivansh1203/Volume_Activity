@@ -1,16 +1,15 @@
 import streamlit as st
 import pandas as pd
-import requests
-from streamlit_lottie import st_lottie
-import smtplib
-# import datetime
-# import matplotlib.pyplot as plt
 import os
-from PIL import Image
+import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from PIL import Image
+import requests
+import smtplib
 
 
-st.set_page_config(page_title="MQH", page_icon=":tada:", layout="wide")
+
+st.set_page_config(page_title="MQH-Volume_Activity", page_icon=":tada:", layout="wide")
 # ---- HEADER SECTION ----
 with st.container():
     c1, c2 = st.columns(2)
@@ -27,423 +26,138 @@ with st.container():
             resized_image = image.resize((300, 300))
 
             st.image(resized_image)
+            
 
 
 
 
-def load_lottieurl(url):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
 
 
-
-def local_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-# Description
-def info(title, text):
-    with st.expander(f"{title}"):
-        st.write(text)
-
-local_css("style/style.css")
-
-# ---- LOAD ASSETS ----
-lottie_coding_1 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json")
-# lottie_coding_2 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_2cwDXD.json")
-
-st.sidebar.header('MQH')
+st.sidebar.header('MQH (Volume Based Activity)')
 st.sidebar.header("Select The Parameters:")
 
-with st.container():
-    st.write("---")
-    left_column, right_column = st.columns(2)
-    with left_column:
-        st.header("What we do")
-        st.write("##")
-        st.write(
-            """
-           MQH is a comprehensive online platform dedicated to providing data visualization and in-depth analysis of major moves in international markets. With a focus on empowering traders and investors, MQH offers a range of tools and resources to delve into market trends, enabling users to scrutinize charts and identify trading opportunities with precision. By offering a closer perspective on market dynamics, MQH equips users with valuable insights to make informed decisions and navigate the complexities of global trading effectively
-           
-            """
-        )
-        st.write("[Our Repository >]()")
-    with right_column:
-       
-        st_lottie(lottie_coding_1, height=300, key="coding")
+def load_csv_files(directory):
+    csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+    return csv_files
 
-def plot_line_chart_with_slider(df, y_column, start_date, end_date, title):
-    # Convert start_date and end_date to datetime objects
-    start_datetime = pd.Timestamp(start_date)
-    end_datetime = pd.Timestamp(end_date)
-    
-    # Filter dataframe based on selected date range
-    mask = (df['Timestamp'] >= start_datetime) & (df['Timestamp'] <= end_datetime)
-    filtered_df = df.loc[mask]
 
-    # Sort dataframe by 'Timestamp'
-    filtered_df = filtered_df.sort_values(by='Timestamp')
+@st.cache_data
+def load_data(selected_csv):
+    df = pd.read_csv(selected_csv)
+    st.write(df)
+    return df
 
-    # Create a Plotly figure
-    fig = go.Figure()
+# Function to calculate percentage of buy and sell volumes
+def calculate_percentage(new_df, selected_time, custom_date):
+    filtered_df = new_df[(new_df['Time'] == selected_time) & (new_df['Date'] <= custom_date)]
+    total_volume = filtered_df['Volume'].sum()
+    buy_volume = filtered_df[filtered_df['Type'] == 'Buy']['Volume'].sum()
+    sell_volume = filtered_df[filtered_df['Type'] == 'Sell']['Volume'].sum()
+    total_count = len(filtered_df)
+    buy_count = len(filtered_df[filtered_df['Type'] == 'Buy'])
+    sell_count = len(filtered_df[filtered_df['Type'] == 'Sell'])
+    buy_percentage = (buy_count / total_count) * 100 if total_volume > 0 else 0
+    sell_percentage = (sell_count / total_count) * 100 if total_volume > 0 else 0
+    return buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume
 
-    # Add trace for the selected column
-    fig.add_trace(go.Scatter(x=filtered_df['Timestamp'], y=filtered_df[y_column], name=y_column, mode='lines'))
+# Function to create candlestick chart
+def create_candlestick_chart(filtered_df):
+    # Filter the data where the date is less than or equal to the selected date
+    filtered_df = new_df[(new_df['Date'] <= custom_date)]
 
-    # Update layout with title and slider
-    fig.update_layout(
-        title=title,
-        xaxis=dict(title='Timestamp', rangeslider=dict(visible=True), type='date'),
-        yaxis=dict(title=y_column, autorange=True),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly figure
-    st.plotly_chart(fig)
-
-def plot_scatter_chart(df, x_column, y_column, start_date, end_date, title):
-    # Convert start_date and end_date to datetime objects
-    start_datetime = pd.Timestamp(start_date)
-    end_datetime = pd.Timestamp(end_date)
-    
-    # Filter dataframe based on selected date range
-    mask = (df['Timestamp'] >= start_datetime) & (df['Timestamp'] <= end_datetime)
-    filtered_df = df.loc[mask]
-
-    # Create a Plotly figure
-    fig = go.Figure()
-
-    # Add trace for scatter plot
-    fig.add_trace(go.Scatter(x=filtered_df[x_column], y=filtered_df[y_column], mode='markers', name='Data points'))
-
-    # Update layout with title and axis labels
-    fig.update_layout(
-        title=title,
-        xaxis=dict(title=x_column),
-        yaxis=dict(title=y_column),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly figure
-    st.plotly_chart(fig)
-
-def plot_heatmap(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the mean of 'Market Open Interest'
-    heatmap_data = df.groupby(['Year', 'Month'])['Market Open Interest'].mean().reset_index()
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot = heatmap_data.pivot(index='Month', columns='Year', values='Market Open Interest')
-
-    # Create a Plotly heatmap
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot.values,
-        x=heatmap_data_pivot.columns,
-        y=heatmap_data_pivot.index,
-        colorscale='ylgn'))
-
-    # Update layout with title and axis labels
-    fig.update_layout(
-        title='Market Open Interest Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
+    fig = go.Figure(data=[go.Candlestick(x=filtered_df.index,
+                                         open=filtered_df['Open'],
+                                         high=filtered_df['High'],
+                                         low=filtered_df['Low'],
+                                         close=filtered_df['Close'])])
+    st.subheader("Candlestick Chart (Note-> Newest Date First in the Chart)")
+    fig.update_layout(title='Candlestick Chart',
+                      xaxis_title='Index Number According to the Table (Newest Date First)',
+                      yaxis_title='Price',
+                      xaxis_rangeslider_visible=False)
     st.plotly_chart(fig)
 
 
-# Daily Range Heatmap
-def plot_heatmap1(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the mean of 'Daily Range'
-    heatmap_data1 = df.groupby(['Year', 'Month'])['Daily Range'].mean().reset_index()
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot1 = heatmap_data1.pivot(index='Month', columns='Year', values='Daily Range')
-
-    # Create a Plotly heatmap
-    fig1 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot1.values,
-        x=heatmap_data_pivot1.columns,
-        y=heatmap_data_pivot1.index,
-        colorscale='Viridis'))
-
-    # Update layout with title and axis labels
-    fig1.update_layout(
-        title='Daily Range Heatmap (Years vs Months)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig1)
-
-
-#Greater MOI
-
-def plot_heatmap2(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-   
-     # Group by year and month and calculate the count of occurrences of 'Greater MOI' equal to 1
-    heatmap_data2 = df[df['Greater MOI'] == 1].groupby(['Year', 'Month']).size().reset_index(name='Count')
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot2 = heatmap_data2.pivot(index='Month', columns='Year', values='Count')
-
-    # Create a Plotly heatmap
-    fig2 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot2.values,
-        x=heatmap_data_pivot2.columns,
-        y=heatmap_data_pivot2.index,
-        colorscale="Viridis"))
-
-    # Update layout with title and axis labels
-    fig2.update_layout(
-        title='Greater MOI Heatmap (Years vs Months)  (10 Day Moving Average)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig2)
-
-#Greater DR
-    
-def plot_heatmap3(df):
-    # Sort the DataFrame by 'Timestamp' column
-    df = df.sort_values(by='Timestamp')
-    
-    # Convert 'Timestamp' column to datetime format
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Extract year and month from 'Timestamp' column
-    df['Year'] = df['Timestamp'].dt.year
-    df['Month'] = df['Timestamp'].dt.month_name()
-
-    # Define the correct order of months
-    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    # Convert 'Month' column to categorical type with the correct order of months
-    df['Month'] = pd.Categorical(df['Month'], categories=month_order, ordered=True)
-
-    # Group by year and month and calculate the count of occurrences of 'Greater DR' equal to 1
-    heatmap_data3 = df[df['Greater DR'] == 1].groupby(['Year', 'Month']).size().reset_index(name='Count')
-
-    # Pivot the dataframe for plotting heatmap
-    heatmap_data_pivot3 = heatmap_data3.pivot(index='Month', columns='Year', values='Count')
-
-    # Create a Plotly heatmap
-    fig3 = go.Figure(data=go.Heatmap(
-        z=heatmap_data_pivot3.values,
-        x=heatmap_data_pivot3.columns,
-        y=heatmap_data_pivot3.index,
-        colorscale="Viridis"))
-
-    # Update layout with title and axis labels
-    fig3.update_layout(
-        title='Greater DR Heatmap (Years vs Months) (10 Day Moving Average)',
-        xaxis=dict(title='Year'),
-        yaxis=dict(title='Month'),
-        hovermode='x unified'
-    )
-
-    # Show the Plotly heatmap
-    st.plotly_chart(fig3)
-# Streamlit UI
-st.title('CSV Viewer')
-
-# Fetch all CSV files from the current directory
+st.title("Dataset Viewer")
+st.subheader("Note: To check the Latest Date upto which the data is updated select the required CSV file and see the 0th Index if the below dataset viewer -> Upto that date you can check the Volume Activity.")
+st.write("Last Updated-> 16/04/2024")
 csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
 
-# Dropdown menu to select a CSV file
-selected_csv = st.sidebar.selectbox("Choose a CSV file", csv_files)
+
+selected_csv = st.sidebar.selectbox("Choose a CSV file:", csv_files)
 
 if selected_csv:
-    # Read the selected CSV file
-    df = pd.read_csv(selected_csv)
-    
-    # Display the dataframe (optional)
-    st.write("Selected CSV data:")
-    st.write(df)
+    df = load_data(selected_csv)
 
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y')
-    
-    # Convert 'Timestamp' column to datetime format
-    # df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-    
-    # Date range selection for Market Open Interest and Daily Range
-    min_date = df['Timestamp'].min().date()
-    max_date = df['Timestamp'].max().date()
-    start_date = st.sidebar.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
-    end_date = st.sidebar.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
-    
-    # Plot Market Open Interest chart
-    st.subheader("Market Open Interest Line Chart")
-    plot_line_chart_with_slider(df, 'Market Open Interest', start_date, end_date, "Market Open Interest")
-
-    # Plot Daily Range chart
-    st.subheader("Daily Range Line Chart")
-    plot_line_chart_with_slider(df, 'Daily Range', start_date, end_date, "Daily Range")
-
-    # Plot scatter chart for Market Open Interest and Daily Range
-    st.subheader("Market Open Interest vs. Daily Range Scatter Plot")
-    plot_scatter_chart(df, 'Market Open Interest', 'Daily Range', start_date, end_date, "Market Open Interest vs. Daily Range")
-
-    # Date range selection for "Greater MOI"
-    st.subheader("Number of Times Market Open Interest is Greater than 10 Day Moving Average")
-    moi_start_date = st.date_input('Start date for Greater MOI/DR', min_value=min_date, max_value=max_date, value=min_date)
-    moi_end_date = st.date_input('End date for Greater MOI/DR', min_value=min_date, max_value=max_date, value=max_date)
-    
-    # Filter dataframe based on selected date range for Greater MOI
-    mask = (df['Timestamp'] >= pd.Timestamp(moi_start_date)) & (df['Timestamp'] <= pd.Timestamp(moi_end_date))
-    filtered_moi_df = df.loc[mask]
-    
-    # Check if 'Greater MOI' column exists
-    if 'Greater MOI' in filtered_moi_df.columns:
-        # Count occurrences of Greater MOI equal to 1
-        moi_count = filtered_moi_df[filtered_moi_df['Greater MOI'] == 1].shape[0]
-        st.write(f"Number of times MOI is Greater than 10 Day Moving Average: {moi_count}")
-    else:
-        st.write("The 'Greater MOI' column does not exist in the selected data.")
+ 
+    df['Date'] = pd.to_datetime(df['Timestamp']).dt.date
+    df['Time'] = pd.to_datetime(df['Timestamp']).dt.time
 
 
+    new_df = df[['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Type', 'Range']]
 
-    st.subheader("Number of Times Daily Range is Greater than 10 Day Moving Average")
-    
-    # Filter dataframe based on selected date range for Greater MOI
-    mask = (df['Timestamp'] >= pd.Timestamp(moi_start_date)) & (df['Timestamp'] <= pd.Timestamp(moi_end_date))
-    filtered_dr_df = df.loc[mask]
-    
-    # Check if 'Greater MOI' column exists
-    if 'Greater DR' in filtered_dr_df.columns:
-        # Count occurrences of Greater MOI equal to 1
-        dr_count = filtered_dr_df[filtered_moi_df['Greater DR'] == 1].shape[0]
-        st.write(f"Number of times DR is Greater than 10 Day Moving Average: {dr_count}")
-    else:
-        st.write("The 'Greater DR' column does not exist in the selected data.")
+ 
+    selected_date = st.sidebar.date_input("Select Date:", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
+    selected_time = st.sidebar.time_input("Select Time:", value=new_df['Time'].iloc[0])
 
-    plot_heatmap(df)
-    plot_heatmap1(df)
-    plot_heatmap2(df)
-    plot_heatmap3(df)
+    custom_date = pd.to_datetime(f"{selected_date.strftime('%d-%m-%Y')}")
 
+  
+    filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
 
-# ---- WHAT I DO ----
-# with st.container():
-#     st.write("---")
-#     left_column, right_column = st.columns(2)
-#     with left_column:
-#         st.header("What we do")
-#         st.write("##")
-#         st.write(
-#             """
-#            MQH is a comprehensive online platform dedicated to providing data visualization and in-depth analysis of major moves in international markets. With a focus on empowering traders and investors, MQH offers a range of tools and resources to delve into market trends, enabling users to scrutinize charts and identify trading opportunities with precision. By offering a closer perspective on market dynamics, MQH equips users with valuable insights to make informed decisions and navigate the complexities of global trading effectively
+    st.subheader("Filtered Data:")
+    st.write(filtered_data)
+
+              
            
-#             """
-#         )
-#         st.write("[Our Repository >]()")
-#     with right_column:
+    if not filtered_data.empty:
        
-#         st_lottie(lottie_coding_1, height=300, key="coding")
+        buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume = calculate_percentage(new_df, selected_time, custom_date)
 
-       
+        if total_volume > 0:  
+           
+            labels = ['Buy', 'Sell']
+            sizes = [buy_percentage, sell_percentage]
+            volumes = [buy_volume, sell_volume]
+            colors = ['green', 'red']  # Green for buy, red for sell
+            explode = (0.1, 0)
 
+            # Plot pie chart using Streamlit's native function
+            fig1, ax1 = plt.subplots(figsize=(6, 6))
+            # fig1, ax1 = plt.subplots()
+            ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"), colors=colors)
+            ax1.axis('equal')  
+            
+            st.subheader("Buy/Sell Type Volume Share Pie Chart")
+            with st.container():
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.pyplot(fig1)
+                with c2:
+                    st.subheader("The Required Buy/Sell Volume Percentage upto the selected date for a particular timespan")
+         
+                    tooltip_text = [
+                        f"<b>Type:</b> {labels[i]}, <b>Volume:</b> {volumes[i]} ({sizes[i]:.2f}%)"
+                        for i in range(len(labels))
+                    ]
+                    tooltip_text.append(f"<b>Total Volume:</b> {total_volume}")
 
-# st.sidebar.header('MQH 2011-2014')
-# st.sidebar.header("Select The Parameters:")
+                    # Display tooltip
+                    st.write("\n".join(tooltip_text), unsafe_allow_html=True)
+
+         
+            create_candlestick_chart(new_df)
+        else:
+            st.write("Total volume is zero. Cannot create pie chart.")
+    else:
+        st.write("No data available for the selected date and time.")
 
 
 st.sidebar.markdown('''
 ---
-Created with ❤️ by [Shivansh](https://github.com/Shivansh1203/MQH).
+Created with ❤️ by [Shivansh](https://github.com/Shivansh1203/Volume_Activity).
 ''')
 
-
-
-
-
-
-# ---- PROJECTS ----
-# with st.container():
-#     st.write("---")
-#     st.header("Our Approach")
-#     text_column, image_column= st.columns((2))
-#     with text_column:
-#         st.subheader("")
-#         st.write(
-#             """
-#            MQH is a comprehensive online platform dedicated to providing data visualization and in-depth analysis of major moves in international markets. With a focus on empowering traders and investors, MQH offers a range of tools and resources to delve into market trends, enabling users to scrutinize charts and identify trading opportunities with precision. By offering a closer perspective on market dynamics, MQH equips users with valuable insights to make informed decisions and navigate the complexities of global trading effectively
-#             """
-#         )
-
-#     with image_column:
-
-#             image = Image.open('images/mqh_logo.jpeg')
-
-#             resized_image = image.resize((300, 300))  
-
-#             st.image(resized_image)
-
-# with st.container():
-#         st.subheader("Our Vision")
-#         st.write(
-#             """
-#             MQH is a comprehensive online platform dedicated to providing data visualization and in-depth analysis of major moves in international markets. With a focus on empowering traders and investors, MQH offers a range of tools and resources to delve into market trends, enabling users to scrutinize charts and identify trading opportunities with precision. By offering a closer perspective on market dynamics, MQH equips users with valuable insights to make informed decisions and navigate the complexities of global trading effectively
-#             """
-#         )
-    
-# ---- CONTACT ----
 
 with st.container():
     st.write("---")
@@ -498,5 +212,3 @@ with st.container():
     """,
     unsafe_allow_html=True
 )
-
-

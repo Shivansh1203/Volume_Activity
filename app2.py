@@ -329,8 +329,8 @@ def create_candlestick_chart(filtered_df):
 
 
 st.title("Dataset Viewer")
-
-
+st.subheader("Note: To check the Latest Date upto which the data is updated select the required CSV file and see the 0th Index if the below dataset viewer -> Upto that date you can check the Volume Activity.")
+st.write("Last Updated-> 16/04/2024")
 csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
 
 
@@ -350,7 +350,7 @@ if selected_csv:
     selected_date = st.sidebar.date_input("Select Date:", min_value=new_df['Date'].min(), max_value=new_df['Date'].max(), value=new_df['Date'].min())
     selected_time = st.sidebar.time_input("Select Time:", value=new_df['Time'].iloc[0])
 
-    custom_date = pd.to_datetime(f"{selected_date.strftime('%Y-%d-%m')}")
+    custom_date = pd.to_datetime(f"{selected_date.strftime('%d-%m-%Y')}")
 
   
     filtered_data = new_df[(new_df['Date'] == custom_date) & (new_df['Time'] == selected_time)]
@@ -358,6 +358,8 @@ if selected_csv:
     st.subheader("Filtered Data:")
     st.write(filtered_data)
 
+              
+           
     if not filtered_data.empty:
        
         buy_percentage, sell_percentage, total_volume, buy_volume, sell_volume = calculate_percentage(new_df, selected_time, custom_date)
@@ -371,32 +373,33 @@ if selected_csv:
             explode = (0.1, 0)
 
             # Plot pie chart using Streamlit's native function
-            fig1, ax1 = plt.subplots(figsize=(3, 3))
-
+            fig1, ax1 = plt.subplots(figsize=(6, 6))
             # fig1, ax1 = plt.subplots()
             ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90, textprops=dict(color="w"), colors=colors)
             ax1.axis('equal')  
             
             st.subheader("Buy/Sell Type Volume Share Pie Chart")
-            st.pyplot(fig1)
-
-            st.subheader("The Required Buy/Sell Volume Percentage upto the selected date for a particular timespan")
+            with st.container():
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.pyplot(fig1)
+                with c2:
+                    st.subheader("The Required Buy/Sell Volume Percentage upto the selected date for a particular timespan")
             # tooltip_text = [
             #     f"Type: {labels[i]}, Volume: {volumes[i]} ({sizes[i]:.2f}%)"
             #     for i in range(len(labels))
             # ]
             # tooltip_text.append(f"Total Volume: {total_volume}")
 
-          
             # st.write("\n".join(tooltip_text))
-            tooltip_text = [
-                f"<b>Type:</b> {labels[i]}, <b>Volume:</b> {volumes[i]} ({sizes[i]:.2f}%)"
-                for i in range(len(labels))
-            ]
-            tooltip_text.append(f"<b>Total Volume:</b> {total_volume}")
+                    tooltip_text = [
+                        f"<b>Type:</b> {labels[i]}, <b>Volume:</b> {volumes[i]} ({sizes[i]:.2f}%)"
+                        for i in range(len(labels))
+                    ]
+                    tooltip_text.append(f"<b>Total Volume:</b> {total_volume}")
 
-            # Display tooltip
-            st.write("\n".join(tooltip_text), unsafe_allow_html=True)
+                    # Display tooltip
+                    st.write("\n".join(tooltip_text), unsafe_allow_html=True)
 
          
             create_candlestick_chart(new_df)
